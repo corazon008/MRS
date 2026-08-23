@@ -102,6 +102,13 @@ def evaluator(dataset: str, clientManager: ClientsManager):
         [1, 3, 5, 10],
     )
 
+    mrr = evaluator.evaluate_custom(
+        qrels,
+        results,
+        [1, 3, 5, 10],
+        metric="mrr",
+    )
+
     print("\nNDCG")
     print(ndcg)
 
@@ -114,21 +121,20 @@ def evaluator(dataset: str, clientManager: ClientsManager):
     print("\nPrecision")
     print(precision)
 
-    # Save results to a file
+    ### If you want to save your results and runfile (useful for reranking)
     results_dir = Path(__file__).parent.parent.absolute() / "results"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    results_file = (
-        results_dir / f"{dataset}_{constants.EMBEDDING_MODEL}_results.txt"
+
+    os.makedirs(results_dir, exist_ok=True)
+
+    #### Save the evaluation runfile & results
+    util.save_runfile(
+        results_dir / f"{dataset}_{constants.EMBEDDING_MODEL}.run.trec", results
     )
-    with open(results_file, "w") as f:
-        f.write("NDCG\n")
-        f.write(str(ndcg) + "\n\n")
-
-        f.write("MAP\n")
-        f.write(str(_map) + "\n\n")
-
-        f.write("Recall\n")
-        f.write(str(recall) + "\n\n")
-
-        f.write("Precision\n")
-        f.write(str(precision) + "\n\n")
+    util.save_results(
+        results_dir / f"{dataset}_{constants.EMBEDDING_MODEL}.json",
+        ndcg,
+        _map,
+        recall,
+        precision,
+        mrr,
+    )
