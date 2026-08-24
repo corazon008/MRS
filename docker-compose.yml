@@ -9,6 +9,5 @@ services:
     expose:
       - 6333
       - 6334
-      - 6335
     volumes:
       - ./qdrant_data:/qdrant/storage

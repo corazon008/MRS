@@ -82,7 +82,10 @@ class ClientsManager:
         self, collection_name: str, force: bool = False
     ):
         """Create a Qdrant collection if it doesn't exist."""
-        if not self.qdrant_client.collection_exists(collection_name):
+        if (
+            not self.qdrant_client.collection_exists(collection_name)
+            and not force
+        ):
             self.qdrant_client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(
@@ -90,12 +93,16 @@ class ClientsManager:
                 ),
             )
         else:
-            if force:
+            try:
                 self.qdrant_client.delete_collection(collection_name)
-                self.qdrant_client.create_collection(
-                    collection_name=collection_name,
-                    vectors_config=VectorParams(
-                        size=constants.EMBEDDING_DIMENSION,
-                        distance=Distance.COSINE,
-                    ),
+            except Exception as e:
+                print(
+                    f"Warning: Could not delete collection {collection_name}: {e}"
                 )
+            self.qdrant_client.create_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(
+                    size=constants.EMBEDDING_DIMENSION,
+                    distance=Distance.COSINE,
+                ),
+            )

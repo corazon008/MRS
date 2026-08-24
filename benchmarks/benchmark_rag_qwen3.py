@@ -18,6 +18,7 @@ dataset = "quora"
 clientManager = ClientsManager()
 
 constants.EMBEDDING_MODEL = "qwen3-embedding:0.6b"
+constants.EMBEDDING_DIMENSION = 1024
 
 evaluator(dataset=dataset, clientManager=clientManager)
 

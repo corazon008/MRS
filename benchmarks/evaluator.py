@@ -9,8 +9,17 @@ from mrs.clientsManager import ClientsManager
 from mrs import constants
 
 
+def clean_text(text):
+    # Remove non-alphanumeric characters and replace spaces with underscores
+    text = "".join(c if c.isalnum() else "_" for c in text)
+    return text
+
+
 def evaluator(dataset: str, clientManager: ClientsManager):
-    collection_name = f"{dataset}_collection_{constants.EMBEDDING_MODEL}"
+    collection_name = (
+        f"{dataset}_collection_{clean_text(constants.EMBEDDING_MODEL)}"
+    )
+    print(collection_name)
 
     # -------------------------
     # Download BEIR dataset
@@ -56,6 +65,7 @@ def evaluator(dataset: str, clientManager: ClientsManager):
 
     clientManager.initialize_vector_store(
         collection_name=collection_name,
+        force=True,
     )
     # If the collection already exists, we skip adding documents to avoid duplicates.
     if clientManager.qdrant_client.count(
@@ -122,7 +132,7 @@ def evaluator(dataset: str, clientManager: ClientsManager):
     print(precision)
 
     ### If you want to save your results and runfile (useful for reranking)
-    results_dir = Path(__file__).parent.parent.absolute() / "results"
+    results_dir = Path(__file__).parent.absolute() / "results"
 
     os.makedirs(results_dir, exist_ok=True)
 
