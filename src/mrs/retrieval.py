@@ -54,6 +54,27 @@ class Retriever:
             embedding=embeddings,
         )
 
+    def recreate_collection(self):
+        """
+        Recreate the Qdrant collection.
+        """
+        client = QdrantClient(constants.QDRANT_URL, check_compatibility=False)
+        if client.collection_exists(constants.QDRANT_COLLECTION_NAME):
+            print(
+                f"Deleting existing Qdrant collection: {constants.QDRANT_COLLECTION_NAME}"
+            )
+            client.delete_collection(constants.QDRANT_COLLECTION_NAME)
+
+        print(
+            f"Creating new Qdrant collection: {constants.QDRANT_COLLECTION_NAME}"
+        )
+        client.recreate_collection(
+            collection_name=constants.QDRANT_COLLECTION_NAME,
+            vectors_config=VectorParams(
+                size=constants.EMBEDDING_DIMENSION, distance=Distance.COSINE
+            ),
+        )
+
     def add_documents(self, documents: list[Document], ids: list[int] = None):
         """
         Add documents to the vector store.
@@ -61,7 +82,9 @@ class Retriever:
         """
         self.vector_store.add_documents(documents, ids=ids)
 
-    def similarity_search_with_score(self, query: str, k: int = 5):
+    def similarity_search_with_score(
+        self, query: str, k: int = 5
+    ) -> list[tuple[Document, float]]:
         """
         Perform a similarity search on the vector store and then rerank the results.
         @param query: The query string to search for similar documents.
@@ -70,18 +93,19 @@ class Retriever:
         """
         return self.vector_store.similarity_search_with_score(query, k=k)
 
-    def retrieve(self, query: str, k: int = 5):
+    def retrieve(self, query: str, k: int = 5) -> list[tuple[Document, float]]:
         """
         Retrieve documents based on the query.
         @param query: The query string to search for similar documents.
         @param k: The number of top similar documents to retrieve.
         @return: A list of Document instances that are most similar to the query.
         """
-        docs = self.similarity_search_with_score(query, k=k * 3)
+        pair = self.similarity_search_with_score(query, k=k * 3)
         reranked_docs = rerank_documents(
-            query, [doc for doc, _ in docs], top_k=k
+            query, [doc for doc, _ in pair], top_k=k
         )
-        return reranked_docs
+
+        return [(doc, score) for doc, score in pair if doc in reranked_docs][:k]
 
 
 class RetrieverSingleton(Retriever):
@@ -107,7 +131,7 @@ def reranker(query: str, documents: list[str], top_k: int = 10) -> list[dict]:
 
 def rerank_documents(
     query: str, documents: list[Document], top_k: int = 10
-) -> list:
+) -> list[Document]:
     """
     Reorder documents by reranker relevance to the query.
     Skips the model entirely when the candidate pool is tiny.
@@ -128,7 +152,7 @@ def rerank_documents(
 
 def rerank_docs(
     query: str, documents: list[Document], top_k: int = 10
-) -> list[str]:
+) -> list[Document]:
     """
     Rerank a list of documents based on their relevance to the query using a CrossEncoder model.
     Returns a list of dictionaries with 'corpus_id' and 'score'.

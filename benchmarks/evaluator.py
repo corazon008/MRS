@@ -61,7 +61,12 @@ def evaluator(dataset: str, retriever: Retriever, description: str = ""):
 
         qdrant_ids.append(int(doc_id))
 
-    retriever.add_documents(documents, qdrant_ids)
+    if retriever.vector_store.client.count(
+        constants.QDRANT_COLLECTION_NAME
+    ).count != len(documents):
+        retriever.recreate_collection()
+
+        retriever.add_documents(documents, qdrant_ids)
 
     # -------------------------
     # Retrieve
@@ -70,7 +75,7 @@ def evaluator(dataset: str, retriever: Retriever, description: str = ""):
 
     for query_id, query in queries.items():
 
-        docs_with_scores = retriever.similarity_search_with_score(
+        docs_with_scores = retriever.retrieve(
             query,
             k=10,
         )

@@ -15,10 +15,12 @@ if __name__ == "__main__":
 
     retriever = Retriever(embeddings=constants.EMBEDDING_MODEL)
 
+    description = "reranker"
+
     evaluator(
         dataset=dataset,
         retriever=retriever,
-        description="baseline nomic-embed-text",
+        description=description,
     )
 
     dataset = "scifact"
@@ -27,10 +29,10 @@ if __name__ == "__main__":
         f"{dataset}_collection_{clean_text(constants.EMBEDDING_MODEL)}"
     )
 
-    retriever = Retriever(embeddings=constants.EMBEDDING_MODEL, test_mode=True)
+    retriever = Retriever(embeddings=constants.EMBEDDING_MODEL)
 
     evaluator(
         dataset=dataset,
         retriever=retriever,
-        description="baseline nomic-embed-text",
+        description=description,
     )
