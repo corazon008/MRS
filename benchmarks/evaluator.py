@@ -1,3 +1,5 @@
+import csv
+from datetime import datetime
 from pathlib import Path
 import os
 from beir import util, LoggingHandler
@@ -16,7 +18,7 @@ def clean_text(text):
     return text
 
 
-def evaluator(dataset: str, retriever: Retriever):
+def evaluator(dataset: str, retriever: Retriever, description: str = ""):
     # -------------------------
     # Download BEIR dataset
     # -------------------------
@@ -128,3 +130,29 @@ def evaluator(dataset: str, retriever: Retriever):
         precision,
         mrr,
     )
+
+    #### Append run to CSV log for improvement tracking
+    metrics = {
+        **ndcg,
+        **_map,
+        **recall,
+        **precision,
+        **mrr,
+    }
+
+    row = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "model": constants.EMBEDDING_MODEL,
+        "description": description,
+        **metrics,
+    }
+
+    csv_path = results_dir / f"{clean_text(dataset)}.csv"
+
+    write_header = not csv_path.exists()
+
+    with csv_path.open("a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=row.keys())
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)

@@ -15,7 +15,11 @@ if __name__ == "__main__":
 
     retriever = Retriever(embeddings=constants.EMBEDDING_MODEL)
 
-    evaluator(dataset=dataset, retriever=retriever)
+    evaluator(
+        dataset=dataset,
+        retriever=retriever,
+        description="baseline nomic-embed-text",
+    )
 
     dataset = "scifact"
 
@@ -25,4 +29,8 @@ if __name__ == "__main__":
 
     retriever = Retriever(embeddings=constants.EMBEDDING_MODEL, test_mode=True)
 
-    evaluator(dataset=dataset, retriever=retriever)
+    evaluator(
+        dataset=dataset,
+        retriever=retriever,
+        description="baseline nomic-embed-text",
+    )

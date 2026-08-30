@@ -8,11 +8,7 @@ import os
 from sentence_transformers import CrossEncoder
 from langchain_ollama import OllamaEmbeddings
 
-from mrs.constants import (
-    QDRANT_URL,
-    QDRANT_COLLECTION_NAME,
-    EMBEDDING_DIMENSION,
-)
+from mrs import constants
 
 RERANKER_MODEL = os.environ.get("MAIA_RERANKER_MODEL", "BAAI/bge-reranker-base")
 
@@ -36,23 +32,25 @@ class Retriever:
         if isinstance(embeddings, str):
             embeddings = OllamaEmbeddings(model=embeddings)
 
-        client = QdrantClient(":memory:", check_compatibility=False)
+        client = QdrantClient(constants.QDRANT_URL, check_compatibility=False)
 
         if (
-            not client.collection_exists(QDRANT_COLLECTION_NAME)
+            not client.collection_exists(constants.QDRANT_COLLECTION_NAME)
             or recreate_collection
         ):
-            print(f"Creating Qdrant collection: {QDRANT_COLLECTION_NAME}")
+            print(
+                f"Creating Qdrant collection: {constants.QDRANT_COLLECTION_NAME}"
+            )
             client.create_collection(
-                collection_name=QDRANT_COLLECTION_NAME,
+                collection_name=constants.QDRANT_COLLECTION_NAME,
                 vectors_config=VectorParams(
-                    size=EMBEDDING_DIMENSION, distance=Distance.COSINE
+                    size=constants.EMBEDDING_DIMENSION, distance=Distance.COSINE
                 ),
             )
 
         self.vector_store = QdrantVectorStore(
             client=client,
-            collection_name=QDRANT_COLLECTION_NAME,
+            collection_name=constants.QDRANT_COLLECTION_NAME,
             embedding=embeddings,
         )
 
