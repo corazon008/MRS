@@ -7,6 +7,7 @@ from langchain_core.documents import Document
 
 from mrs.clientsManager import ClientsManager
 from mrs import constants
+from mrs import Retriever
 
 
 def clean_text(text):
@@ -15,12 +16,7 @@ def clean_text(text):
     return text
 
 
-def evaluator(dataset: str, clientManager: ClientsManager):
-    collection_name = (
-        f"{dataset}_collection_{clean_text(constants.EMBEDDING_MODEL)}"
-    )
-    print(collection_name)
-
+def evaluator(dataset: str, retriever: Retriever):
     # -------------------------
     # Download BEIR dataset
     # -------------------------
@@ -63,23 +59,7 @@ def evaluator(dataset: str, clientManager: ClientsManager):
 
         qdrant_ids.append(int(doc_id))
 
-    clientManager.initialize_vector_store(
-        collection_name=collection_name,
-        force=True,
-    )
-    # If the collection already exists, we skip adding documents to avoid duplicates.
-    if clientManager.qdrant_client.count(
-        collection_name=collection_name
-    ) != len(documents):
-        clientManager.initialize_vector_store(
-            collection_name=collection_name,
-            force=True,
-        )
-
-        clientManager.vector_store.add_documents(
-            documents,
-            ids=qdrant_ids,
-        )
+    retriever.add_documents(documents, qdrant_ids)
 
     # -------------------------
     # Retrieve
@@ -88,11 +68,9 @@ def evaluator(dataset: str, clientManager: ClientsManager):
 
     for query_id, query in queries.items():
 
-        docs_with_scores = (
-            clientManager.vector_store.similarity_search_with_score(
-                query,
-                k=10,
-            )
+        docs_with_scores = retriever.similarity_search_with_score(
+            query,
+            k=10,
         )
 
         results[query_id] = {
@@ -132,16 +110,18 @@ def evaluator(dataset: str, clientManager: ClientsManager):
     print(precision)
 
     ### If you want to save your results and runfile (useful for reranking)
-    results_dir = Path(__file__).parent.absolute() / "results"
+    results_dir = (
+        Path(__file__).parent.absolute() / "results" / clean_text(dataset)
+    )
 
     os.makedirs(results_dir, exist_ok=True)
 
     #### Save the evaluation runfile & results
     util.save_runfile(
-        results_dir / f"{dataset}_{constants.EMBEDDING_MODEL}.run.trec", results
+        results_dir / f"{constants.EMBEDDING_MODEL}.run.trec", results
     )
     util.save_results(
-        results_dir / f"{dataset}_{constants.EMBEDDING_MODEL}.json",
+        results_dir / f"{constants.EMBEDDING_MODEL}.json",
         ndcg,
         _map,
         recall,
